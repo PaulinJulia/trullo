@@ -1,6 +1,6 @@
 import { mongoose } from "../db";
-const Schema = mongoose.Schema;
 import { interfaceUser } from "./User";
+const Schema = mongoose.Schema;
 
 interface interfaceTask {
   id: string;

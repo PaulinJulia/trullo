@@ -1,7 +1,7 @@
 import { mongoose } from "../db";
 const Schema = mongoose.Schema;
 
-export interface interfaceUser extends Document {
+export interface interfaceUser {
   id: string;
   name: string;
   email: string;

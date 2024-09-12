@@ -3,6 +3,7 @@ import {
   GraphQLString,
   GraphQLID,
 } from "graphql";
+import { UserType } from "./User";
 
 
 const TaskType = new GraphQLObjectType({
@@ -12,7 +13,7 @@ const TaskType = new GraphQLObjectType({
     title: { type: GraphQLString },
     description: { type: GraphQLString },
     status: { type: GraphQLString },
-    assignedTo: { type: GraphQLString },
+    assignedTo: { type: UserType },
     createdAt: { type: GraphQLString },
     finishedBy: { type: GraphQLString },
   }),

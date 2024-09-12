@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import {
   GraphQLObjectType,
   GraphQLSchema,
@@ -24,12 +23,13 @@ const RootQuery = new GraphQLObjectType({
           if (!task) {
             throw new Error(`Task with ID ${args.id} not found`);
           }
-          return task;
+          return {
+            ...task.toObject(),
+            createdAt: task.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+          };
         } catch (error) {
           if (error instanceof Error) {
             console.error("Error fetching task:", error.message);
-          } else {
-            throw new Error("Error fetching task.");
           }
         }
       },
@@ -44,7 +44,7 @@ const RootQuery = new GraphQLObjectType({
         status: { type: new GraphQLList(GraphQLString) },
         assignedTo: { type: GraphQLString },
       },
-      resolve(parent, args) {
+      resolve: async (parent, args) => {
         const limit = args.limit || 10;
         const page = args.page || 1;
         const skip = (page - 1) * limit;
@@ -63,21 +63,29 @@ const RootQuery = new GraphQLObjectType({
         }
 
         try {
-          const tasks = Task.find(filter)
+          const tasks = await Task.find(filter)
             .skip(skip)
             .limit(limit)
             .sort({ [sortField]: sortOrder });
-          return tasks;
+          return tasks.map((task) => ({
+            ...task.toObject(),
+            createdAt: task.createdAt.toISOString(),
+          }));
         } catch (error) {
-          throw new Error("An error occurred while fetching tasks");
+          if (error instanceof Error) {
+            console.error(
+              "An error occurred while fetching tasks",
+              error.message
+            );
+          }
         }
       },
     },
     user: {
       type: UserType,
       args: { id: { type: GraphQLID } },
-      resolve(parent, args) {
-        return User.findById(args.id);
+      resolve: async (parent, args) => {
+        return await User.findById(args.id);
       },
     },
     users: {
@@ -88,7 +96,7 @@ const RootQuery = new GraphQLObjectType({
         sortBy: { type: GraphQLString },
         orderBy: { type: GraphQLString },
       },
-      resolve(parent, args) {
+      resolve: async (parent, args) => {
         const limit = args.limit || 10;
         const page = args.page || 1;
         const skip = (page - 1) * limit;
@@ -96,13 +104,18 @@ const RootQuery = new GraphQLObjectType({
         const sortOrder = args.orderBy === "desc" ? -1 : 1; // Sort order: -1 for desc, 1 for asc
 
         try {
-          const users = User.find()
+          const users = await User.find()
             .skip(skip)
             .limit(limit)
             .sort({ [sortField]: sortOrder });
           return users;
         } catch (error) {
-          throw new Error("An error occurred while fetching users");
+          if (error instanceof Error) {
+            console.error(
+              "An error occurred while fetching users",
+              error.message
+            );
+          }
         }
       },
     },
@@ -118,19 +131,25 @@ const Mutation = new GraphQLObjectType({
         title: { type: GraphQLString },
         description: { type: GraphQLString },
         status: { type: GraphQLString },
-        assignedTo: { type: UserInputType },
+        assignedTo: { type: GraphQLID },
         finishedBy: { type: GraphQLString },
       },
-      resolve(parent, args) {
-        const task = new Task({
-          title: args.title,
-          description: args.description,
-          status: args.status,
-          assignedTo: args.assignedTo,
-          createdAt: args.createdAt,
-          finishedBy: args.finishedBy,
-        });
-        return task.save();
+      resolve: async (parent, args) => {
+        try {
+          const task = new Task({
+            title: args.title,
+            description: args.description,
+            status: args.status || "to-do",
+            assignedTo: args.assignedTo || null,
+            createdAt: new Date(),
+            finishedBy: args.finishedBy || null,
+          });
+          return await task.save();
+        } catch (error) {
+          if (error instanceof Error) {
+            console.error("Error to add task:", error.message);
+          }
+        }
       },
     },
     updateTask: {
@@ -142,7 +161,7 @@ const Mutation = new GraphQLObjectType({
         assignedTo: { type: UserInputType },
         finishedBy: { type: GraphQLString },
       },
-      async resolve(parent, args) {
+      resolve: async (parent, args) => {
         const updatedTask = await Task.findByIdAndUpdate(
           args.id,
           {
