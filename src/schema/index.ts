@@ -8,7 +8,7 @@ import {
 } from "graphql";
 import { Task } from "../models/Task";
 import { User } from "../models/User";
-import { UserType, UserInputType } from "./User";
+import { UserType } from "./User";
 import { TaskType } from "./Task";
 
 const RootQuery = new GraphQLObjectType({
@@ -29,7 +29,7 @@ const RootQuery = new GraphQLObjectType({
           };
         } catch (error) {
           if (error instanceof Error) {
-            console.error("Error fetching task:", error.message);
+            throw new Error(`Error fetching task: ${error.message}`);
           }
         }
       },
@@ -73,9 +73,8 @@ const RootQuery = new GraphQLObjectType({
           }));
         } catch (error) {
           if (error instanceof Error) {
-            console.error(
-              "An error occurred while fetching tasks",
-              error.message
+            throw new Error(
+              `An error occurred while fetching tasks: ${error.message}`
             );
           }
         }
@@ -111,9 +110,8 @@ const RootQuery = new GraphQLObjectType({
           return users;
         } catch (error) {
           if (error instanceof Error) {
-            console.error(
-              "An error occurred while fetching users",
-              error.message
+            throw new Error(
+              `An error occurred while fetching users: ${error.message}`
             );
           }
         }
@@ -144,10 +142,14 @@ const Mutation = new GraphQLObjectType({
             createdAt: new Date(),
             finishedBy: args.finishedBy || null,
           });
-          return await task.save();
+          const createdTask = await task.save();
+          return {
+            ...createdTask.toObject(),
+            createdAt: createdTask.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+          };
         } catch (error) {
           if (error instanceof Error) {
-            console.error("Error to add task:", error.message);
+            throw new Error(`Error to add task: ${error.message}`);
           }
         }
       },
@@ -155,27 +157,124 @@ const Mutation = new GraphQLObjectType({
     updateTask: {
       type: TaskType,
       args: {
+        id: { type: GraphQLID },
         title: { type: GraphQLString },
         description: { type: GraphQLString },
         status: { type: GraphQLString },
-        assignedTo: { type: UserInputType },
+        assignedTo: { type: GraphQLID },
         finishedBy: { type: GraphQLString },
       },
       resolve: async (parent, args) => {
-        const updatedTask = await Task.findByIdAndUpdate(
-          args.id,
-          {
-            $set: {
-              title: args.title,
-              description: args.description,
-              status: args.status,
-              assignedTo: args.assignedTo,
-              finishedBy: args.finishedBy,
+        try {
+          const updatedTask = await Task.findByIdAndUpdate(
+            args.id,
+            {
+              $set: {
+                title: args.title,
+                description: args.description,
+                status: args.status,
+                assignedTo: args.assignedTo,
+                finishedBy: args.finishedBy,
+              },
             },
-          },
-          { new: true } // This option returns the updated document
-        );
-        return updatedTask;
+            { new: true } // This option returns the updated document
+          );
+          if (!updatedTask) {
+            throw new Error(`Task with ID ${args.id} not found`);
+          }
+          return {
+            ...updatedTask.toObject(),
+            createdAt: updatedTask.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+          };
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to update task: ${error.message}`);
+          }
+        }
+      },
+    },
+    deleteTask: {
+      type: TaskType,
+      args: { id: { type: GraphQLID } },
+      resolve: async (parent, args) => {
+        try {
+          const deletedTask = await Task.findByIdAndDelete(args.id);
+          if (!deletedTask) {
+            throw new Error(`Task with ID ${args.id} not found`);
+          }
+          return deletedTask;
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to delete task: ${error.message}`);
+          }
+        }
+      },
+    },
+    addUser: {
+      type: UserType,
+      args: {
+        name: { type: GraphQLString },
+        email: { type: GraphQLString },
+        password: { type: GraphQLString },
+      },
+      resolve: async (parent, args) => {
+        try {
+          const user = new User({
+            name: args.name,
+            email: args.email,
+            password: args.password,
+          });
+          return await user.save();
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to create user: ${error.message}`);
+          }
+        }
+      },
+    },
+    updateUser: {
+      type: UserType,
+      args: {
+        id: { type: GraphQLID },
+        name: { type: GraphQLString },
+        email: { type: GraphQLString },
+        password: { type: GraphQLString },
+      },
+      resolve: async (parent, args) => {
+        try {
+          return await User.findByIdAndUpdate(
+            args.id,
+            {
+              $set: {
+                name: args.name,
+                email: args.email,
+                password: args.password,
+              },
+            },
+            { new: true } // This option returns the updated document
+          );
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to update task: ${error.message}`);
+          }
+        }
+      },
+    },
+    deleteUser: {
+      type: UserType,
+      args: { id: { type: GraphQLID } },
+      resolve: async (parent, args) => {
+        try {
+          const deletedUser = await User.findByIdAndDelete(args.id);
+          if (!deletedUser) {
+            throw new Error(`User with ID ${args.id} not found`);
+          }
+          return deletedUser;
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to delete user: ${error.message}`);
+          }
+        }
       },
     },
   },

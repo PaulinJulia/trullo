@@ -12,9 +12,10 @@ interface interfaceTask {
   finishedBy?: string;
 }
 
+// Mongoose Schema
 const TaskSchema = new Schema({
-  id: String,
-  title: { type: String, required: true },
+  _id: { type: Schema.Types.ObjectId, auto: true },
+  title: { type: String!, required: true },
   description: String,
   status: {
     type: String,

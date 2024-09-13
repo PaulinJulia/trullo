@@ -8,10 +8,16 @@ export interface interfaceUser {
   password: string;
 }
 
+//Mongoose Schema
 const UserSchema = new Schema({
-  id: String,
+  _id: { type: Schema.Types.ObjectId, auto: true },
   name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email address"],
+  },
   password: {
     type: String,
     required: true,
