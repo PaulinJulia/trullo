@@ -84,7 +84,13 @@ const RootQuery = new GraphQLObjectType({
       type: UserType,
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args) => {
-        return await User.findById(args.id);
+        try {
+          return await User.findById(args.id);
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error fetching user: ${error.message}`);
+          }
+        }
       },
     },
     users: {
