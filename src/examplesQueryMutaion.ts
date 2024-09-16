@@ -1,37 +1,41 @@
 // QUERY GRAPHQL
 
 // ----GET TASK BY ID----
-// query {task(id: "66e33b67295b9e361ee9ac9b"){
-//   title description status assignedTo{name} createdAt finishedBy}}
+// query {task(id: "66e805d7e65f70271aa2c2df"){
+//   title description status assignedTo {
+//     _id name email
+//   } createdAt finishedBy}}
 
 // ----GET ALL TASKS----
-// query {tasks{title description status assignedTo{name} createdAt finishedBy }}
+// query {tasks{title description status assignedTo{_id name email} createdAt finishedBy }}
 
 // ----GET USER BY ID----
-// query{user(id: "66e40d422417259d1649f844") {
-//   id
+// query{user(id: "66e7ffa5e65f70271aa2c2d5") {
+//   _id
 //   name
 //   email
 // }}
 
-// ----GET ALL TASKS----
-// query {users{id name email password}}
+// ----GET ALL USERS----
+// query {users{_id name email password}}
 
 // MUTATION GRAPHQL
 
 // ----ADD TASK-----
 // mutation {
 //   addTask(
-//     title: "Middag",
-//     description: "Handla mat",
+//     title: "Tidsbokning",
+//     description: "Boka tid",
+//     assignedTo: "66e7ffa5e65f70271aa2c2d5",
 //   ) {
-//     id
+//     _id
 //     title
 //     description
 //     status
 //     assignedTo {
-//       id
+//     _id
 //       name
+//       email
 //     }
 //     createdAt
 //     finishedBy
@@ -41,33 +45,27 @@
 // ----UPDATE TASK---
 // mutation {
 //   updateTask(
-//     id: "66e339b99f30c26db07d2b34",
-//     title: "Köpa"
-//     description: "Handla blomma",
-//     status: "in progress",
-//     assignedTo: "66e3ea44897b49c2bd64a1f8",
-//     finishedBy: "Onsdag"
+//     id: "66e7fbf29856e1e0ba9cac41",
+//     title: "Jobba"
+//     description: "jobba mycket"
+//     assignedTo: "66e7ff8ee65f70271aa2c2d3"
 
 //   ) {
-//     id
 //     title
 //     description
 //     status
-//     assignedTo {
-//       id
-//       name
-//     }
+//     assignedTo {_id name email}
 //     createdAt
 //     finishedBy
 //   }
 // }
 
 // ----DELETE TASK----
-// mutation {deleteTask(id: "66e33a879f30c26db07d2b36"){title}}
+// mutation {deleteTask(id: "66e7fbbf9856e1e0ba9cac3f"){title description}}
 
 // ----CREATE USER----
-// mutation {addUser(name: "Julia", email: "hej@hej.se", password: "123hej") {
-//   id
+// mutation {addUser(name: "Henry", email: "Henry@henry.se", password: "Henry123") {
+//   _id
 //   name
 //   email
 // }}
@@ -75,11 +73,10 @@
 // ----UPDATE USER----
 // mutation {
 //   updateUser(
-//     id: "66e40d602417259d1649f846",
-//     name: "Maya"
-//     email: "Handla blomma",
-//     password: "mayahej12",
-
+//     id: "66e7ff6ce65f70271aa2c2d1",
+//     name: "Gustaf"
+//     email: "gurra@gurra.com",
+//     password: "gurra123",
 //   ) {
 // name email password
 //   }

@@ -19,7 +19,7 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args) => {
         try {
-          const task = await Task.findById(args.id);
+          const task = await Task.findById(args.id).populate("assignedTo");
           if (!task) {
             throw new Error(`Task with ID ${args.id} not found`);
           }
@@ -64,6 +64,7 @@ const RootQuery = new GraphQLObjectType({
 
         try {
           const tasks = await Task.find(filter)
+            .populate("assignedTo")
             .skip(skip)
             .limit(limit)
             .sort({ [sortField]: sortOrder });
@@ -146,12 +147,24 @@ const Mutation = new GraphQLObjectType({
             status: args.status || "to-do",
             assignedTo: args.assignedTo || null,
             createdAt: new Date(),
-            finishedBy: args.finishedBy || null,
+            finishedBy:
+              args.finishedBy ||
+              (() => {
+                const fiveDaysLater = new Date();
+                fiveDaysLater.setDate(fiveDaysLater.getDate() + 5);
+                return fiveDaysLater.toISOString();
+              })(),
           });
           const createdTask = await task.save();
+          const populatedTask = await Task.findById(createdTask._id).populate(
+            "assignedTo"
+          );
+          if (!populatedTask) {
+            throw new Error(`Task with ID ${createdTask.id} not found`);
+          }
           return {
-            ...createdTask.toObject(),
-            createdAt: createdTask.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+            ...populatedTask.toObject(),
+            createdAt: populatedTask.createdAt.toISOString(), // Konverterar Date till ISO-sträng
           };
         } catch (error) {
           if (error instanceof Error) {
@@ -167,24 +180,20 @@ const Mutation = new GraphQLObjectType({
         title: { type: GraphQLString },
         description: { type: GraphQLString },
         status: { type: GraphQLString },
-        assignedTo: { type: GraphQLID },
+        assignedTo: { type: GraphQLString },
         finishedBy: { type: GraphQLString },
       },
       resolve: async (parent, args) => {
         try {
-          const updatedTask = await Task.findByIdAndUpdate(
-            args.id,
-            {
-              $set: {
-                title: args.title,
-                description: args.description,
-                status: args.status,
-                assignedTo: args.assignedTo,
-                finishedBy: args.finishedBy,
-              },
+          const updatedTask = await Task.findByIdAndUpdate(args.id, {
+            $set: {
+              title: args.title,
+              description: args.description,
+              status: args.status,
+              assignedTo: args.assignedTo,
+              finishedBy: args.finishedBy,
             },
-            { new: true } // This option returns the updated document
-          );
+          }).populate("assignedTo");
           if (!updatedTask) {
             throw new Error(`Task with ID ${args.id} not found`);
           }
@@ -275,6 +284,12 @@ const Mutation = new GraphQLObjectType({
           if (!deletedUser) {
             throw new Error(`User with ID ${args.id} not found`);
           }
+          await Task.updateMany(
+            {
+              assignedTo: args.id,
+            },
+            { $set: { assignedTo: null } }
+          );
           return deletedUser;
         } catch (error) {
           if (error instanceof Error) {
