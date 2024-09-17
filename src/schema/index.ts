@@ -10,6 +10,20 @@ import { Task } from "../models/Task";
 import { User } from "../models/User";
 import { UserType } from "./User";
 import { TaskType } from "./Task";
+import bcrypt from "bcrypt";
+// import { Jwt, JwtPayload } from "jsonwebtoken";
+
+// const verifyJwt = (jwtToken, secret) => {
+//   return new Promise((resolve, reject) => {
+//     Jwt.verify(jwtToken, secret, function (err, decoded) {
+//       if (err) {
+//         reject(err);
+//       } else {
+//         resolve(decoded);
+//       }
+//     });
+//   });
+// };
 
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
@@ -124,6 +138,24 @@ const RootQuery = new GraphQLObjectType({
         }
       },
     },
+    login: {
+      type: UserType,
+      args: {
+        email: { type: GraphQLString },
+        password: { type: GraphQLString },
+      },
+      resolve: async (parent, args) => {
+        const email = args.email;
+        const password = args.password;
+        try {
+          return await User.findOne({ email, password });
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error fetching user: ${error.message}`);
+          }
+        }
+      },
+    },
   },
 });
 
@@ -233,11 +265,14 @@ const Mutation = new GraphQLObjectType({
         password: { type: GraphQLString },
       },
       resolve: async (parent, args) => {
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(args.password, saltRounds);
+
         try {
           const user = new User({
             name: args.name,
             email: args.email,
-            password: args.password,
+            password: hashedPassword,
           });
           return await user.save();
         } catch (error) {
