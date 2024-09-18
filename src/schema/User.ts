@@ -1,8 +1,4 @@
-import {
-  GraphQLObjectType,
-  GraphQLString,
-  GraphQLID,
-} from "graphql";
+import { GraphQLObjectType, GraphQLString, GraphQLID } from "graphql";
 
 const UserType = new GraphQLObjectType({
   name: "User",
@@ -14,4 +10,12 @@ const UserType = new GraphQLObjectType({
   }),
 });
 
-export { UserType };
+const LoginUserType = new GraphQLObjectType({
+  name: "LoginUser",
+  fields: () => ({
+    user: { type: UserType },
+    token: { type: GraphQLString },
+  }),
+});
+
+export { UserType, LoginUserType };

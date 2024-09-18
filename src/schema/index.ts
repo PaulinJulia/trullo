@@ -8,22 +8,10 @@ import {
 } from "graphql";
 import { Task } from "../models/Task";
 import { User } from "../models/User";
-import { UserType } from "./User";
+import { LoginUserType, UserType } from "./User";
 import { TaskType } from "./Task";
 import bcrypt from "bcrypt";
-// import { Jwt, JwtPayload } from "jsonwebtoken";
-
-// const verifyJwt = (jwtToken, secret) => {
-//   return new Promise((resolve, reject) => {
-//     Jwt.verify(jwtToken, secret, function (err, decoded) {
-//       if (err) {
-//         reject(err);
-//       } else {
-//         resolve(decoded);
-//       }
-//     });
-//   });
-// };
+import jwt from "jsonwebtoken";
 
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
@@ -31,8 +19,11 @@ const RootQuery = new GraphQLObjectType({
     task: {
       type: TaskType,
       args: { id: { type: GraphQLID } },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const task = await Task.findById(args.id).populate("assignedTo");
           if (!task) {
             throw new Error(`Task with ID ${args.id} not found`);
@@ -139,16 +130,40 @@ const RootQuery = new GraphQLObjectType({
       },
     },
     login: {
-      type: UserType,
+      type: LoginUserType,
       args: {
         email: { type: GraphQLString },
         password: { type: GraphQLString },
       },
-      resolve: async (parent, args) => {
-        const email = args.email;
-        const password = args.password;
+      resolve: async (parent, args, context) => {
+        const { email, password } = args;
+        const userInContext = context.user;
+        if (userInContext) {
+          throw new Error("You are already logged in");
+        }
         try {
-          return await User.findOne({ email, password });
+          const user = await User.findOne({ email });
+
+          if (!user) {
+            throw new Error(`User ${user} not found`);
+          }
+          //Är lösenordet som användaren har skrivit in detsamma som har hittats på användaren i databasen
+          const validPassword = await bcrypt.compare(password, user.password);
+
+          if (!validPassword) {
+            throw new Error("Password do not match!");
+          }
+          if (!process.env.JWT_SECRET) {
+            throw new Error(
+              "JWT_SECRET is not defined in environment variables."
+            );
+          }
+          //Användaren är betrodd. email finns i db och matchar lösenordet
+          //Skapa vårt token med vårt hemliga ord (JWT_SECRET)
+          const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+            expiresIn: "1h",
+          });
+          return { user, token };
         } catch (error) {
           if (error instanceof Error) {
             throw new Error(`Error fetching user: ${error.message}`);
@@ -257,7 +272,7 @@ const Mutation = new GraphQLObjectType({
         }
       },
     },
-    addUser: {
+    register: {
       type: UserType,
       args: {
         name: { type: GraphQLString },
