@@ -49,7 +49,7 @@ const RootQuery = new GraphQLObjectType({
         status: { type: new GraphQLList(GraphQLString) },
         assignedTo: { type: GraphQLString },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         const limit = args.limit || 10;
         const page = args.page || 1;
         const skip = (page - 1) * limit;
@@ -68,6 +68,9 @@ const RootQuery = new GraphQLObjectType({
         }
 
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const tasks = await Task.find(filter)
             .populate("assignedTo")
             .skip(skip)
@@ -89,8 +92,11 @@ const RootQuery = new GraphQLObjectType({
     user: {
       type: UserType,
       args: { id: { type: GraphQLID } },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           return await User.findById(args.id);
         } catch (error) {
           if (error instanceof Error) {
@@ -107,7 +113,7 @@ const RootQuery = new GraphQLObjectType({
         sortBy: { type: GraphQLString },
         orderBy: { type: GraphQLString },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         const limit = args.limit || 10;
         const page = args.page || 1;
         const skip = (page - 1) * limit;
@@ -115,6 +121,9 @@ const RootQuery = new GraphQLObjectType({
         const sortOrder = args.orderBy === "desc" ? -1 : 1; // Sort order: -1 for desc, 1 for asc
 
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const users = await User.find()
             .skip(skip)
             .limit(limit)
@@ -186,8 +195,11 @@ const Mutation = new GraphQLObjectType({
         assignedTo: { type: GraphQLID },
         finishedBy: { type: GraphQLString },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const task = new Task({
             title: args.title,
             description: args.description,
@@ -230,8 +242,11 @@ const Mutation = new GraphQLObjectType({
         assignedTo: { type: GraphQLString },
         finishedBy: { type: GraphQLString },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const updatedTask = await Task.findByIdAndUpdate(args.id, {
             $set: {
               title: args.title,
@@ -258,8 +273,11 @@ const Mutation = new GraphQLObjectType({
     deleteTask: {
       type: TaskType,
       args: { id: { type: GraphQLID } },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const deletedTask = await Task.findByIdAndDelete(args.id);
           if (!deletedTask) {
             throw new Error(`Task with ID ${args.id} not found`);
@@ -305,8 +323,11 @@ const Mutation = new GraphQLObjectType({
         email: { type: GraphQLString },
         password: { type: GraphQLString },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           return await User.findByIdAndUpdate(
             args.id,
             {
@@ -328,8 +349,11 @@ const Mutation = new GraphQLObjectType({
     deleteUser: {
       type: UserType,
       args: { id: { type: GraphQLID } },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const deletedUser = await User.findByIdAndDelete(args.id);
           if (!deletedUser) {
             throw new Error(`User with ID ${args.id} not found`);

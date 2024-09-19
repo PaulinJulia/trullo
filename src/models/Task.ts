@@ -1,5 +1,5 @@
 import { mongoose } from "../db";
-import { interfaceUser } from "./User";
+import { InterfaceUser } from "./User";
 const Schema = mongoose.Schema;
 
 interface interfaceTask {
@@ -7,7 +7,7 @@ interface interfaceTask {
   title: string;
   description: string;
   status: "to-do" | "in progress" | "blocked" | "done";
-  assignedTo?: interfaceUser;
+  assignedTo?: InterfaceUser;
   createdAt: Date;
   finishedBy?: string;
 }

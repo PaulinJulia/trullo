@@ -19,6 +19,12 @@
 // ----GET ALL USERS----
 // query {users{_id name email password}}
 
+// ----SIGN IN----
+//  query{login(email: "Johannes@Johannes.se", password: "123Johannes") {
+//  user{name}
+//    token
+//  }}
+
 // MUTATION GRAPHQL
 
 // ----ADD TASK-----
