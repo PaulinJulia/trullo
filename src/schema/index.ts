@@ -12,10 +12,54 @@ import { LoginUserType, UserType } from "./User";
 import { TaskType } from "./Task";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { BoardType } from "./Board";
+import { Board } from "../models/Board";
 
 const RootQuery = new GraphQLObjectType({
   name: "RootQueryType",
   fields: {
+    board: {
+      type: BoardType,
+      args: { id: { type: GraphQLID } },
+      resolve: async (parent, args, context) => {
+        try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
+          const board = await Board.findById(args.id).populate("assignedTo");
+          if (!board) {
+            throw new Error(`Board with ID ${args.id} not found`);
+          }
+          return board;
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error fetching task: ${error.message}`);
+          }
+        }
+      },
+    },
+    boards: {
+      type: new GraphQLList(BoardType),
+      args: {
+        assignedTo: { type: GraphQLString },
+      },
+      resolve: async (parent, args, context) => {
+        try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
+          const tasks = await Task.find().populate("assignedTo");
+
+          return tasks;
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(
+              `An error occurred while fetching tasks: ${error.message}`
+            );
+          }
+        }
+      },
+    },
     task: {
       type: TaskType,
       args: { id: { type: GraphQLID } },
@@ -168,10 +212,14 @@ const RootQuery = new GraphQLObjectType({
             );
           }
           //Användaren är betrodd. email finns i db och matchar lösenordet
-          //Skapa vårt token med vårt hemliga ord (JWT_SECRET)
-          const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-            expiresIn: "1h",
-          });
+          //Skapa token med hemligt ord
+          const token = jwt.sign(
+            { id: user.id, role: user.role },
+            process.env.JWT_SECRET,
+            {
+              expiresIn: "1h",
+            }
+          );
           return { user, token };
         } catch (error) {
           if (error instanceof Error) {
@@ -186,6 +234,96 @@ const RootQuery = new GraphQLObjectType({
 const Mutation = new GraphQLObjectType({
   name: "Mutation",
   fields: {
+    addBoard: {
+      type: BoardType,
+      args: {
+        title: { type: GraphQLString },
+        tasks: { type: new GraphQLList(GraphQLID) },
+        background: { type: GraphQLString, defaultValue: "grey" },
+      },
+      resolve: async (parent, args) => {
+        try {
+          const board = new Board({
+            title: args.title,
+            tasks: args.tasks,
+            background: args.background,
+          });
+          const createdBoard = await board.save();
+          return await Board.findById(createdBoard._id).populate({
+            path: "tasks",
+            populate: { path: "assignedTo", model: "User" },
+          });
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to create board: ${error.message}`);
+          }
+        }
+      },
+    },
+    updateBoard: {
+      type: BoardType,
+      args: {
+        id: { type: GraphQLID },
+        title: { type: GraphQLString },
+        tasks: { type: new GraphQLList(GraphQLID) },
+        background: { type: GraphQLString },
+      },
+      resolve: async (parent, args, context) => {
+        // const user = context.user;
+        try {
+          // if (!user) {
+          //   throw new Error("You must be authenticated");
+          // } else if (user.role !== "admin") {
+          //   throw new Error("You are not authorized to perform this action");
+          // }
+          const updatedBoard = await Board.findByIdAndUpdate(
+            args.id,
+            {
+              $set: {
+                title: args.title,
+                tasks: args.tasks,
+                background: args.background,
+              },
+            }
+            // { new: true } // This option returns the updated document
+          ).populate({
+            path: "tasks",
+            populate: { path: "assignedTo", model: "User" },
+          });
+          return updatedBoard;
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to update board: ${error.message}`);
+          }
+        }
+      },
+    },
+    deleteBoard: {
+      type: BoardType,
+      args: { id: { type: GraphQLID } },
+      resolve: async (parent, args, context) => {
+        try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
+          const deletedBoard = await Board.findByIdAndDelete(args.id);
+          if (!deletedBoard) {
+            throw new Error(`Board with ID ${args.id} not found`);
+          }
+          await Task.updateMany(
+            {
+              assignedTo: args.id,
+            },
+            { $set: { assignedTo: null } }
+          );
+          return deletedBoard;
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Error to delete board: ${error.message}`);
+          }
+        }
+      },
+    },
     addTask: {
       type: TaskType,
       args: {
@@ -194,6 +332,7 @@ const Mutation = new GraphQLObjectType({
         status: { type: GraphQLString },
         assignedTo: { type: GraphQLID },
         finishedBy: { type: GraphQLString },
+        tags: { type: GraphQLString },
       },
       resolve: async (parent, args, context) => {
         try {
@@ -213,6 +352,7 @@ const Mutation = new GraphQLObjectType({
                 fiveDaysLater.setDate(fiveDaysLater.getDate() + 5);
                 return fiveDaysLater.toISOString();
               })(),
+            tags: args.tags || null,
           });
           const createdTask = await task.save();
           const populatedTask = await Task.findById(createdTask._id).populate(
@@ -241,6 +381,7 @@ const Mutation = new GraphQLObjectType({
         status: { type: GraphQLString },
         assignedTo: { type: GraphQLString },
         finishedBy: { type: GraphQLString },
+        tags: { type: GraphQLString },
       },
       resolve: async (parent, args, context) => {
         try {
@@ -254,6 +395,7 @@ const Mutation = new GraphQLObjectType({
               status: args.status,
               assignedTo: args.assignedTo,
               finishedBy: args.finishedBy,
+              tags: args.tags,
             },
           }).populate("assignedTo");
           if (!updatedTask) {
@@ -296,6 +438,7 @@ const Mutation = new GraphQLObjectType({
         name: { type: GraphQLString },
         email: { type: GraphQLString },
         password: { type: GraphQLString },
+        role: { type: GraphQLString, defaultValue: "user" },
       },
       resolve: async (parent, args) => {
         const saltRounds = 10;
@@ -306,6 +449,7 @@ const Mutation = new GraphQLObjectType({
             name: args.name,
             email: args.email,
             password: hashedPassword,
+            role: args.role,
           });
           return await user.save();
         } catch (error) {
@@ -324,9 +468,12 @@ const Mutation = new GraphQLObjectType({
         password: { type: GraphQLString },
       },
       resolve: async (parent, args, context) => {
+        const user = context.user;
         try {
-          if (!context.user) {
+          if (!user) {
             throw new Error("You must be authenticated");
+          } else if (user.role !== "admin") {
+            throw new Error("You are not authorized to perform this action");
           }
           return await User.findByIdAndUpdate(
             args.id,
@@ -341,7 +488,7 @@ const Mutation = new GraphQLObjectType({
           );
         } catch (error) {
           if (error instanceof Error) {
-            throw new Error(`Error to update task: ${error.message}`);
+            throw new Error(`Error to update user: ${error.message}`);
           }
         }
       },

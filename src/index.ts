@@ -3,7 +3,6 @@ import { graphqlHTTP } from "express-graphql";
 import schema from "./schema";
 import cors from "cors";
 import jwt from "jsonwebtoken";
-// import { auth } from "./middleware/auth"; //Middleware globally
 
 const app = express();
 const port = process.env.PORT || 4000;

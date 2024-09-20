@@ -6,6 +6,7 @@ export interface InterfaceUser {
   name: string;
   email: string;
   password: string;
+  role: string
 }
 
 //Mongoose Schema
@@ -25,6 +26,7 @@ const UserSchema = new Schema({
     min: 1,
     minLength: 3,
   },
+  role: { type: String, default: "user" },
 });
 
 const User = mongoose.model<InterfaceUser>("User", UserSchema);

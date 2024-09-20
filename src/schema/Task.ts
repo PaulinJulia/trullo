@@ -11,6 +11,7 @@ const TaskType = new GraphQLObjectType({
     assignedTo: { type: UserType },
     createdAt: { type: GraphQLString },
     finishedBy: { type: GraphQLString },
+    tags: { type: GraphQLString },
   }),
 });
 

@@ -2,7 +2,7 @@ import { mongoose } from "../db";
 import { InterfaceUser } from "./User";
 const Schema = mongoose.Schema;
 
-interface interfaceTask {
+export interface InterfaceTask {
   id: string;
   title: string;
   description: string;
@@ -10,12 +10,13 @@ interface interfaceTask {
   assignedTo?: InterfaceUser;
   createdAt: Date;
   finishedBy?: string;
+  tags: "red" | "green" | "purple" | "blue" | "orange";
 }
 
 // Mongoose Schema
 const TaskSchema = new Schema({
   _id: { type: Schema.Types.ObjectId, auto: true },
-  title: { type: String!, required: true },
+  title: { type: String, required: true },
   description: String,
   status: {
     type: String,
@@ -25,8 +26,9 @@ const TaskSchema = new Schema({
   assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
   finishedBy: String,
+  tags: { type: String, enum: ["red", "green", "purple", "blue", "orange"]}
 });
 
-const Task = mongoose.model<interfaceTask>("Task", TaskSchema);
+const Task = mongoose.model<InterfaceTask>("Task", TaskSchema);
 
 export { Task };
