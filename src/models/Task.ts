@@ -25,8 +25,15 @@ const TaskSchema = new Schema({
   },
   assignedTo: { type: Schema.Types.ObjectId, ref: "User" },
   createdAt: { type: Date, default: Date.now },
-  finishedBy: String,
-  tags: { type: String, enum: ["red", "green", "purple", "blue", "orange"]}
+  finishedBy: {
+    type: String,
+    default: () => {
+      const date = new Date();
+      date.setDate(date.getDate() + 5);
+      return date.toISOString();
+    },
+  },
+  tags: { type: String, enum: ["red", "green", "purple", "blue", "orange"] },
 });
 
 const Task = mongoose.model<InterfaceTask>("Task", TaskSchema);

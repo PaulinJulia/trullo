@@ -23,14 +23,33 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args, context) => {
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
-          }
-          const board = await Board.findById(args.id).populate("assignedTo");
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
+          const board = await Board.findById(args.id).populate({
+            path: "tasks",
+            populate: { path: "assignedTo", model: "User" },
+          });
           if (!board) {
             throw new Error(`Board with ID ${args.id} not found`);
           }
-          return board;
+
+          const newBoardObject = board.toObject();
+
+          const tasksWithFormattedDates = (newBoardObject.tasks || []).map(
+            (task) => ({
+              ...task,
+              createdAt: new Date(task.createdAt).toLocaleString(),
+              finishedBy: task.finishedBy
+                ? new Date(task.finishedBy).toLocaleString()
+                : null,
+            })
+          );
+
+          return {
+            ...newBoardObject,
+            tasks: tasksWithFormattedDates,
+          };
         } catch (error) {
           if (error instanceof Error) {
             throw new Error(`Error fetching task: ${error.message}`);
@@ -45,12 +64,35 @@ const RootQuery = new GraphQLObjectType({
       },
       resolve: async (parent, args, context) => {
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
+          const boards = await Board.find().populate({
+            path: "tasks",
+            populate: { path: "assignedTo", model: "User" },
+          });
+          if (!boards) {
+            throw new Error(`Board with ID ${args.id} not found`);
           }
-          const tasks = await Task.find().populate("assignedTo");
 
-          return tasks;
+          const boardsWithFormattedDates = boards.map((board) => {
+            const boardObject = board.toObject();
+
+            const tasksWithFormattedDates = (boardObject.tasks || []).map(
+              (task) => ({
+                ...task,
+                createdAt: new Date(task.createdAt).toLocaleString(),
+                finishedBy: task.finishedBy
+                  ? new Date(task.finishedBy).toLocaleString()
+                  : null,
+              })
+            );
+            return {
+              ...boardObject,
+              tasks: tasksWithFormattedDates,
+            };
+          });
+          return boardsWithFormattedDates;
         } catch (error) {
           if (error instanceof Error) {
             throw new Error(
@@ -65,16 +107,19 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args, context) => {
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
-          }
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
           const task = await Task.findById(args.id).populate("assignedTo");
           if (!task) {
             throw new Error(`Task with ID ${args.id} not found`);
           }
           return {
             ...task.toObject(),
-            createdAt: task.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+            createdAt: task.createdAt.toLocaleString(),
+            finishedBy: task.finishedBy
+              ? new Date(task.finishedBy).toLocaleString()
+              : null,
           };
         } catch (error) {
           if (error instanceof Error) {
@@ -112,9 +157,9 @@ const RootQuery = new GraphQLObjectType({
         }
 
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
-          }
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
           const tasks = await Task.find(filter)
             .populate("assignedTo")
             .skip(skip)
@@ -122,7 +167,10 @@ const RootQuery = new GraphQLObjectType({
             .sort({ [sortField]: sortOrder });
           return tasks.map((task) => ({
             ...task.toObject(),
-            createdAt: task.createdAt.toISOString(),
+            createdAt: task.createdAt.toLocaleString(),
+            finishedBy: task.finishedBy
+              ? new Date(task.finishedBy).toLocaleString()
+              : null,
           }));
         } catch (error) {
           if (error instanceof Error) {
@@ -138,9 +186,9 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args, context) => {
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
-          }
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
           return await User.findById(args.id);
         } catch (error) {
           if (error instanceof Error) {
@@ -165,9 +213,9 @@ const RootQuery = new GraphQLObjectType({
         const sortOrder = args.orderBy === "desc" ? -1 : 1; // Sort order: -1 for desc, 1 for asc
 
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
-          }
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
           const users = await User.find()
             .skip(skip)
             .limit(limit)
@@ -249,10 +297,29 @@ const Mutation = new GraphQLObjectType({
             background: args.background,
           });
           const createdBoard = await board.save();
-          return await Board.findById(createdBoard._id).populate({
+          const newBoard = await Board.findById(createdBoard._id).populate({
             path: "tasks",
             populate: { path: "assignedTo", model: "User" },
           });
+          if (!newBoard) {
+            throw new Error("Board not found");
+          }
+          const newBoardObject = newBoard.toObject();
+
+          const tasksWithFormattedDates = (newBoardObject.tasks || []).map(
+            (task) => ({
+              ...task,
+              createdAt: new Date(task.createdAt).toLocaleString(),
+              finishedBy: task.finishedBy
+                ? new Date(task.finishedBy).toLocaleString()
+                : null,
+            })
+          );
+
+          return {
+            ...newBoardObject,
+            tasks: tasksWithFormattedDates,
+          };
         } catch (error) {
           if (error instanceof Error) {
             throw new Error(`Error to create board: ${error.message}`);
@@ -269,7 +336,7 @@ const Mutation = new GraphQLObjectType({
         background: { type: GraphQLString },
       },
       resolve: async (parent, args, context) => {
-        // const user = context.user;
+        const user = context.user;
         try {
           // if (!user) {
           //   throw new Error("You must be authenticated");
@@ -284,13 +351,31 @@ const Mutation = new GraphQLObjectType({
                 tasks: args.tasks,
                 background: args.background,
               },
-            }
-            // { new: true } // This option returns the updated document
+            },
+            { new: true } // This option returns the updated document
           ).populate({
             path: "tasks",
             populate: { path: "assignedTo", model: "User" },
           });
-          return updatedBoard;
+          if (!updatedBoard) {
+            throw new Error("Board not found");
+          }
+          const newBoardObject = updatedBoard.toObject();
+
+          const tasksWithFormattedDates = (newBoardObject.tasks || []).map(
+            (task) => ({
+              ...task,
+              createdAt: new Date(task.createdAt).toLocaleString(),
+              finishedBy: task.finishedBy
+                ? new Date(task.finishedBy).toLocaleString()
+                : null,
+            })
+          );
+
+          return {
+            ...newBoardObject,
+            tasks: tasksWithFormattedDates,
+          };
         } catch (error) {
           if (error instanceof Error) {
             throw new Error(`Error to update board: ${error.message}`);
@@ -310,12 +395,8 @@ const Mutation = new GraphQLObjectType({
           if (!deletedBoard) {
             throw new Error(`Board with ID ${args.id} not found`);
           }
-          await Task.updateMany(
-            {
-              assignedTo: args.id,
-            },
-            { $set: { assignedTo: null } }
-          );
+          await Task.deleteMany({ _id: { $in: deletedBoard.tasks } });
+
           return deletedBoard;
         } catch (error) {
           if (error instanceof Error) {
@@ -336,22 +417,16 @@ const Mutation = new GraphQLObjectType({
       },
       resolve: async (parent, args, context) => {
         try {
-          if (!context.user) {
-            throw new Error("You must be authenticated");
-          }
+          // if (!context.user) {
+          //   throw new Error("You must be authenticated");
+          // }
           const task = new Task({
             title: args.title,
             description: args.description,
             status: args.status || "to-do",
             assignedTo: args.assignedTo || null,
-            createdAt: new Date(),
-            finishedBy:
-              args.finishedBy ||
-              (() => {
-                const fiveDaysLater = new Date();
-                fiveDaysLater.setDate(fiveDaysLater.getDate() + 5);
-                return fiveDaysLater.toISOString();
-              })(),
+            createdAt: new Date().toISOString(),
+            finishedBy: args.finishedBy,
             tags: args.tags || null,
           });
           const createdTask = await task.save();
@@ -363,7 +438,10 @@ const Mutation = new GraphQLObjectType({
           }
           return {
             ...populatedTask.toObject(),
-            createdAt: populatedTask.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+            createdAt: populatedTask.createdAt.toLocaleString(), // Konverterar Date till ISO-sträng
+            finishedBy: populatedTask.finishedBy
+              ? new Date(populatedTask.finishedBy).toLocaleString()
+              : null,
           };
         } catch (error) {
           if (error instanceof Error) {
@@ -388,22 +466,29 @@ const Mutation = new GraphQLObjectType({
           if (!context.user) {
             throw new Error("You must be authenticated");
           }
-          const updatedTask = await Task.findByIdAndUpdate(args.id, {
-            $set: {
-              title: args.title,
-              description: args.description,
-              status: args.status,
-              assignedTo: args.assignedTo,
-              finishedBy: args.finishedBy,
-              tags: args.tags,
+          const updatedTask = await Task.findByIdAndUpdate(
+            args.id,
+            {
+              $set: {
+                title: args.title,
+                description: args.description,
+                status: args.status,
+                assignedTo: args.assignedTo,
+                finishedBy: args.finishedBy,
+                tags: args.tags,
+              },
             },
-          }).populate("assignedTo");
+            { new: true }
+          ).populate("assignedTo");
           if (!updatedTask) {
             throw new Error(`Task with ID ${args.id} not found`);
           }
           return {
             ...updatedTask.toObject(),
             createdAt: updatedTask.createdAt.toISOString(), // Konverterar Date till ISO-sträng
+            finishedBy: updatedTask.finishedBy
+              ? new Date(updatedTask.finishedBy).toLocaleString()
+              : null,
           };
         } catch (error) {
           if (error instanceof Error) {
@@ -424,6 +509,12 @@ const Mutation = new GraphQLObjectType({
           if (!deletedTask) {
             throw new Error(`Task with ID ${args.id} not found`);
           }
+          await Board.updateMany(
+            {
+              tasks: args.id,
+            },
+            { $pull: { tasks: args.id } }
+          );
           return deletedTask;
         } catch (error) {
           if (error instanceof Error) {
@@ -470,11 +561,11 @@ const Mutation = new GraphQLObjectType({
       resolve: async (parent, args, context) => {
         const user = context.user;
         try {
-          if (!user) {
-            throw new Error("You must be authenticated");
-          } else if (user.role !== "admin") {
-            throw new Error("You are not authorized to perform this action");
-          }
+          // if (!user) {
+          //   throw new Error("You must be authenticated");
+          // } else if (user.role !== "admin") {
+          //   throw new Error("You are not authorized to perform this action");
+          // }
           return await User.findByIdAndUpdate(
             args.id,
             {
@@ -510,6 +601,12 @@ const Mutation = new GraphQLObjectType({
               assignedTo: args.id,
             },
             { $set: { assignedTo: null } }
+          );
+          await Board.updateMany(
+            {
+              tasks: args.id,
+            },
+            { $pull: { tasks: args.id } }
           );
           return deletedUser;
         } catch (error) {
