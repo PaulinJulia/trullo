@@ -1,12 +1,15 @@
 import mongoose from "mongoose";
 import "dotenv/config";
 
-const user = process.env.user;
-const pass = process.env.pass;
+// const user = process.env.user;
+// const pass = process.env.pass;
+const MONGODB_URI = process.env.MONGODB_URI;
 
-mongoose.connect(
-  `mongodb+srv://${user}:${pass}@cluster0.pdly1.mongodb.net/trullo`
-);
+if (!MONGODB_URI) {
+  throw new Error("MONGODB_URI miljövariabeln är inte satt");
+}
+
+mongoose.connect(MONGODB_URI);
 
 const db = mongoose.connection;
 // Lyssnar på 'error'-händelsen
