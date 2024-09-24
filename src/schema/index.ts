@@ -23,9 +23,9 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args, context) => {
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const board = await Board.findById(args.id).populate({
             path: "tasks",
             populate: { path: "assignedTo", model: "User" },
@@ -64,9 +64,9 @@ const RootQuery = new GraphQLObjectType({
       },
       resolve: async (parent, args, context) => {
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const boards = await Board.find().populate({
             path: "tasks",
             populate: { path: "assignedTo", model: "User" },
@@ -107,9 +107,9 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args, context) => {
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const task = await Task.findById(args.id).populate("assignedTo");
           if (!task) {
             throw new Error(`Task with ID ${args.id} not found`);
@@ -157,9 +157,9 @@ const RootQuery = new GraphQLObjectType({
         }
 
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const tasks = await Task.find(filter)
             .populate("assignedTo")
             .skip(skip)
@@ -186,9 +186,9 @@ const RootQuery = new GraphQLObjectType({
       args: { id: { type: GraphQLID } },
       resolve: async (parent, args, context) => {
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           return await User.findById(args.id);
         } catch (error) {
           if (error instanceof Error) {
@@ -211,11 +211,13 @@ const RootQuery = new GraphQLObjectType({
         const skip = (page - 1) * limit;
         const sortField = args.sortBy || "name";
         const sortOrder = args.orderBy === "desc" ? -1 : 1; // Sort order: -1 for desc, 1 for asc
-
+        const user = context.user;
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!user) {
+            throw new Error("You must be authenticated");
+          } else if (user.role !== "admin") {
+            throw new Error("You are not authorized to perform this action");
+          }
           const users = await User.find()
             .skip(skip)
             .limit(limit)
@@ -289,8 +291,11 @@ const Mutation = new GraphQLObjectType({
         tasks: { type: new GraphQLList(GraphQLID) },
         background: { type: GraphQLString, defaultValue: "grey" },
       },
-      resolve: async (parent, args) => {
+      resolve: async (parent, args, context) => {
         try {
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const board = new Board({
             title: args.title,
             tasks: args.tasks,
@@ -338,11 +343,9 @@ const Mutation = new GraphQLObjectType({
       resolve: async (parent, args, context) => {
         const user = context.user;
         try {
-          // if (!user) {
-          //   throw new Error("You must be authenticated");
-          // } else if (user.role !== "admin") {
-          //   throw new Error("You are not authorized to perform this action");
-          // }
+          if (!user) {
+            throw new Error("You must be authenticated");
+          }
           const updatedBoard = await Board.findByIdAndUpdate(
             args.id,
             {
@@ -417,9 +420,9 @@ const Mutation = new GraphQLObjectType({
       },
       resolve: async (parent, args, context) => {
         try {
-          // if (!context.user) {
-          //   throw new Error("You must be authenticated");
-          // }
+          if (!context.user) {
+            throw new Error("You must be authenticated");
+          }
           const task = new Task({
             title: args.title,
             description: args.description,
@@ -561,11 +564,9 @@ const Mutation = new GraphQLObjectType({
       resolve: async (parent, args, context) => {
         const user = context.user;
         try {
-          // if (!user) {
-          //   throw new Error("You must be authenticated");
-          // } else if (user.role !== "admin") {
-          //   throw new Error("You are not authorized to perform this action");
-          // }
+          if (!user) {
+            throw new Error("You must be authenticated");
+          }
           return await User.findByIdAndUpdate(
             args.id,
             {

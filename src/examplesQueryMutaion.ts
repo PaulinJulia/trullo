@@ -23,7 +23,7 @@
 // }}
 
 // ----GET ALL USERS----
-// query {users{_id name email password}}
+// query {users{_id name email password role}}
 
 // ----SIGN IN----
 // query{login(email: "Johannes@Johannes.se", password: "123Johannes") {
