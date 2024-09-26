@@ -4,10 +4,13 @@ import schema from "./schema";
 import cors from "cors";
 import jwt from "jsonwebtoken";
 
+const path = require("path")
+
 const app = express();
 // const port = process.env.PORT || 4000;
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "static")));
 
 app.use(
   "/graphql",

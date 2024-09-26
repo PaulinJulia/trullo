@@ -16,12 +16,15 @@ Detta är ett API för en projekthanterings-applikation vid namn Trullo. APIet s
 node.js - https://nodejs.org/en/download  
 npm - https://www.npmjs.com/
 
+
+## Dependencies and Tools
+
 bcrypt, jsonwebtoken, cors, express: Används för autentisering, lösenordshantering och hantering av HTTP-förfrågningar i din applikation.
 graphql, express-graphql, mongoose: Används för att hantera GraphQL-förfrågningar och interagera med MongoDB-databasen.
 dotenv: Laddar miljövariabler från .env-filer för säker hantering av konfigurationsdata.
 typescript, tsx, nodemon: Används för att underlätta utveckling och kompilering av TypeScript-kod.
 
-## Usage
+
 
 
 
