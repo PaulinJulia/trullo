@@ -3,8 +3,7 @@ import { graphqlHTTP } from "express-graphql";
 import schema from "./schema";
 import cors from "cors";
 import jwt from "jsonwebtoken";
-
-const path = require("path")
+import path from "path";
 
 const app = express();
 // const port = process.env.PORT || 4000;
