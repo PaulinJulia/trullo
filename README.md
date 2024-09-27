@@ -1,22 +1,26 @@
 # Trullo
 
-Trullo is a project management API that allows users to register, log in, and create project boards to manage tasks. Users can organize their projects by creating boards, where each board contains tasks with attributes like title, description, status, assigned user, and tags. Users can collaborate by assigning tasks to team members. The application uses a NoSQL database(MongoDB) for flexible storage of users, boards, and tasks. 
+Trullo is a project management API that allows users to register, log in, and create project boards to manage tasks. Users can organize their projects by creating boards, where each board contains tasks with attributes like title, description, status, assigned user, and tags.  
+The application uses a NoSQL database(MongoDB), since I was curious to explore how a document-based database works and wanted to learn more about the NoSQL approach, as opposed to a traditional relational database.
+
 
 ## How to install
 
 node.js - https://nodejs.org/en/download  
 npm - https://www.npmjs.com/
-```
-git clone https://github.com/PaulinJulia/trullo.git  
-cd trullo
-npm install  
 
-Create a .env file in the root directory and add the following variables:  
+```
+git clone https://github.com/PaulinJulia/trullo.git
+cd trullo
+npm install
+
+Create a .env file in the root directory and add the following variables:
 MONGODB_URI=<your-connection>
 JWT_SECRET=<your-key>
 
 npm run dev
 ```
+
 ## Dependencies and Tools
 
 #### Authentication and HTTP Handling
@@ -56,11 +60,26 @@ To deploy and host the application in a serverless environment.
 
 - vercel - A platform for hosting serverless functions and static sites, used to deploy and host.
 
+## Usage
+
+https://trullo-alpha.vercel.app/graphql
+
+For example:  
+mutation {register(name: "Sam", email: "Sam@Sam.se", password: "123Sam") {
+\_id
+name
+email
+password
+}}
+
+query{login(email: "Sam@Sam.se", password: "123Sam") {
+user{name}
+token
+}}
+
 ## About
 
 The project was carried out by one person for the purpose of learing and consolidate knowledge during a course in Backend. This project has no intention of continuing.
-
-https://trullo-alpha.vercel.app/graphql
 
 ## Support
 
