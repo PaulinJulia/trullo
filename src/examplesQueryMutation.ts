@@ -13,7 +13,28 @@
 //   } createdAt finishedBy}}
 
 // ----GET ALL TASKS----
-// query{tasks{_id title description status assignedTo{_id name email role} createdAt finishedBy tags}}
+// query {
+//   tasks(
+//     limit: 5,
+//     page: 1,
+//     sortBy: "createdAt",
+//     orderBy: "asc",
+//   ) {
+//     _id
+//     title
+//     description
+//     status
+//     assignedTo {
+//       _id
+//       name
+//       email
+//       role
+//     }
+//     createdAt
+//     finishedBy
+//     tags
+//   }
+// }
 
 // ----GET USER BY ID----
 // query{user(id: "66e7ff8ee65f70271aa2c2d3") {
@@ -23,7 +44,13 @@
 // }}
 
 // ----GET ALL USERS----
-// query {users{_id name email password role}}
+// query {
+//   users(limit: 5, page: 1, orderBy: "asc") {
+//     _id
+//     name
+//     email
+//   }
+// }
 
 // ----SIGN IN----
 // query{login(email: "Johannes@Johannes.se", password: "123Johannes") {
@@ -105,25 +132,18 @@
 // ----UPDATE TASK---
 // mutation {
 //   updateTask(
-//     id: "66edc147287b1f75ad8a5fd0",
-//     assignedTo: "66ed1e8821ccb186940d7df1"
-
+//     id: "66e3ea44897b49c2bd64a1f8",
+//     assignedTo: "66f53880a0777026136302e2"
 //   ) {
 //     _id
 //     title
 //     description
 //     status
-//     assignedTo {_id name}
-//     createdAt
-//     finishedBy
-//   }
-// }
-
-//   ) {
-//     title
-//     description
-//     status
-//     assignedTo {_id name email}
+//     assignedTo {
+//       _id
+//       name
+//       email
+//     }
 //     createdAt
 //     finishedBy
 //   }
